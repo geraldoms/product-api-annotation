@@ -6,10 +6,11 @@ import com.wirebraincoffe.productapiannotation.model.ProductEvent;
 import com.wirebraincoffe.productapiannotation.repository.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.FluxExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
@@ -21,9 +22,10 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(SpringExtension.class)
-public class ProductControllerMockTest {
+@WebFluxTest(ProductController.class)
+public class ProductControllerWebFluxAnnotationTest {
 
+    @Autowired
     private WebTestClient client;
 
     private List<Product> expectedList;
@@ -31,12 +33,11 @@ public class ProductControllerMockTest {
     @MockBean
     private ProductRepository repository;
 
+    @MockBean
+    private CommandLineRunner commandLineRunner;
+
     @BeforeEach
     void beforeEach() {
-        this.client = WebTestClient.bindToController(new ProductController(repository))
-                .configureClient()
-                .baseUrl("/products")
-                .build();
         this.expectedList = List.of(new Product("1", "Coffee", 1.99));
     }
 
@@ -46,7 +47,7 @@ public class ProductControllerMockTest {
         when(repository.findAll()).thenReturn(Flux.fromIterable(this.expectedList));
 
         client.get()
-                .uri("/")
+                .uri("/products")
                 .exchange()
                 .expectStatus()
                 .isOk()
@@ -60,7 +61,7 @@ public class ProductControllerMockTest {
         when(repository.findById(id)).thenReturn(Mono.empty());
 
         client.get()
-                .uri("/{id}", id)
+                .uri("/products/{id}", id)
                 .exchange()
                 .expectStatus()
                 .isNotFound();
@@ -72,7 +73,7 @@ public class ProductControllerMockTest {
         when(repository.findById(expectedProduct.getId())).thenReturn(Mono.just(expectedProduct));
 
         client.get()
-                .uri("/{id}", expectedProduct.getId())
+                .uri("/products/{id}", expectedProduct.getId())
                 .exchange()
                 .expectStatus()
                 .isOk()
@@ -85,7 +86,7 @@ public class ProductControllerMockTest {
         ProductEvent expectedEvent = new ProductEvent(0L, "Product Event");
 
         FluxExchangeResult<ProductEvent> result = client.get()
-                .uri("/events")
+                .uri("/products/events")
                 .accept(MediaType.TEXT_EVENT_STREAM)
                 .exchange()
                 .expectStatus().isOk()
